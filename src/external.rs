@@ -1,11 +1,17 @@
 #![cfg(test)]
 #![allow(dead_code)]
 
+use std::boxed::Box;
+use std::collections::HashMap;
 use std::vec::Vec;
 
 use ed25519_dalek::{Keypair, Signer};
 use num_bigint::{BigInt, Sign};
 use sha2::Digest;
+use stellar_contract_sdk::{
+    Binary, ContractVTable, ContractVTableFn, ContractVTableFnTrait, Env, RawVal, Symbol,
+    VariableLengthBinary,
+};
 use stellar_xdr::{ScBigInt, ScObject, ScVal, ScVec, WriteXdr};
 
 trait ToScVal {
@@ -125,4 +131,68 @@ impl Message {
         self.to_scval()?.write_xdr(&mut buf).map_err(|_| ())?;
         Ok(kp.sign(sha2::Sha256::digest(&buf).as_slice()).to_bytes())
     }
+}
+
+macro_rules! vtable_fn {
+    ($name:ident, $f:ident, $n:tt, $($i:tt),+) => {
+        #[derive(Clone)]
+        struct $name(Env);
+
+        impl $name {
+            fn new(e: &Env) -> ContractVTableFn {
+                ContractVTableFn(Box::new($name(e.clone())))
+            }
+        }
+
+        impl ContractVTableFnTrait for $name {
+            fn call(&self, args: &[RawVal]) -> RawVal {
+                if args.len() != $n {
+                    panic!()
+                } else {
+                    crate::contract::$f(self.0.clone(), $(args[$i]),+)
+                }
+            }
+
+            fn duplicate(&self) -> ContractVTableFn {
+                ContractVTableFn(Box::new(self.clone()))
+            }
+        }
+    }
+}
+
+vtable_fn!(InitializeFn, __initialize, 1, 0);
+vtable_fn!(NonceFn, __nonce, 1, 0);
+vtable_fn!(AllowanceFn, __allowance, 2, 0, 1);
+vtable_fn!(ApproveFn, __approve, 3, 0, 1, 2);
+vtable_fn!(BalanceFn, __balance, 1, 0);
+vtable_fn!(IsFrozenFn, __is_frozen, 1, 0);
+vtable_fn!(XferFn, __xfer, 3, 0, 1, 2);
+vtable_fn!(XferFromFn, __xfer_from, 4, 0, 1, 2, 3);
+vtable_fn!(BurnFn, __burn, 3, 0, 1, 2);
+vtable_fn!(FreezeFn, __freeze, 2, 0, 1);
+vtable_fn!(MintFn, __mint, 3, 0, 1, 2);
+vtable_fn!(SetAdminFn, __set_admin, 2, 0, 1);
+vtable_fn!(UnfreezeFn, __unfreeze, 2, 0, 1);
+
+fn register_test_contract(e: &Env, contract_id: U256) {
+    let mut bin = Binary::new(e);
+    for b in contract_id {
+        bin.push(b);
+    }
+
+    let mut vtable = HashMap::new();
+    vtable.insert(Symbol::from_str("initialize"), InitializeFn::new(e));
+    vtable.insert(Symbol::from_str("nonce"), NonceFn::new(e));
+    vtable.insert(Symbol::from_str("allowance"), AllowanceFn::new(e));
+    vtable.insert(Symbol::from_str("approve"), ApproveFn::new(e));
+    vtable.insert(Symbol::from_str("balance"), BalanceFn::new(e));
+    vtable.insert(Symbol::from_str("is_frozen"), IsFrozenFn::new(e));
+    vtable.insert(Symbol::from_str("xfer"), XferFn::new(e));
+    vtable.insert(Symbol::from_str("xfer_from"), XferFromFn::new(e));
+    vtable.insert(Symbol::from_str("burn"), BurnFn::new(e));
+    vtable.insert(Symbol::from_str("freeze"), FreezeFn::new(e));
+    vtable.insert(Symbol::from_str("mint"), MintFn::new(e));
+    vtable.insert(Symbol::from_str("set_admin"), SetAdminFn::new(e));
+    vtable.insert(Symbol::from_str("unfreeze"), UnfreezeFn::new(e));
+    e.register_test_contract(bin, ContractVTable(vtable));
 }
