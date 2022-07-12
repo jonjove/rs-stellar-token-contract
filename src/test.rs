@@ -1,3 +1,33 @@
+#![cfg(test)]
+
+use crate::external;
+use ed25519_dalek::Keypair;
+use rand::thread_rng;
+use stellar_contract_sdk::Env;
+
+impl From<&Keypair> for external::Identifier {
+    fn from(kp: &Keypair) -> Self {
+        external::Identifier::Ed25519(kp.public.to_bytes())
+    }
+}
+
+fn generate_keypair() -> Keypair {
+    Keypair::generate(&mut thread_rng())
+}
+
+#[test]
+fn test() {
+    let mut e = Env::with_empty_recording_storage();
+    let contract_id: [u8; 32] = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+        0, 1,
+    ];
+    external::register_test_contract(&e, &contract_id);
+
+    let admin = generate_keypair();
+    external::initialize(&mut e, &contract_id, &(&admin).into());
+}
+
 /*#![cfg(test)]
 
 use std::vec::Vec as ExternalVec;
