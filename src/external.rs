@@ -136,9 +136,9 @@ pub enum Identifier {
 impl ToScVal for &Identifier {
     fn to_scval(&self) -> Result<ScVal, ()> {
         match self {
-            Identifier::Contract(x) => (0u32, x).to_scval(),
-            Identifier::Ed25519(x) => (1u32, x).to_scval(),
-            Identifier::Account(x) => (2u32, x).to_scval(),
+            Identifier::Contract(x) => (0u32, (x,)).to_scval(),
+            Identifier::Ed25519(x) => (1u32, (x,)).to_scval(),
+            Identifier::Account(x) => (2u32, (x,)).to_scval(),
         }
     }
 }
@@ -194,7 +194,7 @@ pub enum Authorization {
 impl ToScVal for &Authorization {
     fn to_scval(&self) -> Result<ScVal, ()> {
         match self {
-            Authorization::Ed25519(x) => (1u32, x).to_scval(),
+            Authorization::Ed25519(x) => (1u32, (x,)).to_scval(),
         }
     }
 }
@@ -208,7 +208,7 @@ pub enum KeyedAuthorization {
 impl ToScVal for &KeyedAuthorization {
     fn to_scval(&self) -> Result<ScVal, ()> {
         match self {
-            KeyedAuthorization::Ed25519(x) => (1u32, x).to_scval(),
+            KeyedAuthorization::Ed25519(x) => (1u32, (x,)).to_scval(),
         }
     }
 }
