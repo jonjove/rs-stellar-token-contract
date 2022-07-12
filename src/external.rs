@@ -303,10 +303,10 @@ vtable_fn!(MintFn, __mint, 3, 0, 1, 2);
 vtable_fn!(SetAdminFn, __set_admin, 2, 0, 1);
 vtable_fn!(UnfreezeFn, __unfreeze, 2, 0, 1);
 
-fn register_test_contract(e: &Env, contract_id: U256) {
+pub fn register_test_contract(e: &Env, contract_id: &U256) {
     let mut bin = Binary::new(e);
     for b in contract_id {
-        bin.push(b);
+        bin.push(*b);
     }
 
     let mut vtable = HashMap::new();
@@ -326,26 +326,31 @@ fn register_test_contract(e: &Env, contract_id: U256) {
     e.register_test_contract(bin, ContractVTable(vtable));
 }
 
-fn initialize(e: &mut Env, contract_id: U256, admin: Identifier) {
+pub fn initialize(e: &mut Env, contract_id: &U256, admin: &Identifier) {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "initialize", (&admin,)).to_scvec().unwrap(),
+        (contract_id, "initialize", (admin,)).to_scvec().unwrap(),
     );
 }
 
-fn nonce(e: &mut Env, contract_id: U256, id: Identifier) -> BigInt {
+pub fn nonce(e: &mut Env, contract_id: &U256, id: &Identifier) -> BigInt {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "nonce", (&id,)).to_scvec().unwrap(),
+        (contract_id, "nonce", (id,)).to_scvec().unwrap(),
     )
     .from_scval()
     .unwrap()
 }
 
-fn allowance(e: &mut Env, contract_id: U256, from: Identifier, spender: Identifier) -> BigInt {
+pub fn allowance(
+    e: &mut Env,
+    contract_id: &U256,
+    from: &Identifier,
+    spender: &Identifier,
+) -> BigInt {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "allowance", (&from, &spender))
+        (contract_id, "allowance", (from, spender))
             .to_scvec()
             .unwrap(),
     )
@@ -353,103 +358,119 @@ fn allowance(e: &mut Env, contract_id: U256, from: Identifier, spender: Identifi
     .unwrap()
 }
 
-fn approve(
+pub fn approve(
     e: &mut Env,
-    contract_id: U256,
-    from: KeyedAuthorization,
-    spender: Identifier,
-    amount: BigInt,
+    contract_id: &U256,
+    from: &KeyedAuthorization,
+    spender: &Identifier,
+    amount: &BigInt,
 ) {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "approve", (&from, &spender, &amount))
+        (contract_id, "approve", (from, spender, amount))
             .to_scvec()
             .unwrap(),
     );
 }
 
-fn balance(e: &mut Env, contract_id: U256, id: Identifier) -> BigInt {
+pub fn balance(e: &mut Env, contract_id: &U256, id: &Identifier) -> BigInt {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "balance", (&id,)).to_scvec().unwrap(),
+        (contract_id, "balance", (id,)).to_scvec().unwrap(),
     )
     .from_scval()
     .unwrap()
 }
 
-fn is_frozen(e: &mut Env, contract_id: U256, id: Identifier) -> bool {
+pub fn is_frozen(e: &mut Env, contract_id: &U256, id: &Identifier) -> bool {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "is_frozen", (&id,)).to_scvec().unwrap(),
+        (contract_id, "is_frozen", (id,)).to_scvec().unwrap(),
     )
     .from_scval()
     .unwrap()
 }
 
-fn xfer(e: &mut Env, contract_id: U256, from: KeyedAuthorization, to: Identifier, amount: BigInt) {
-    e.invoke_function(
-        HostFunction::Call,
-        (&contract_id, "xfer", (&from, &to, &amount))
-            .to_scvec()
-            .unwrap(),
-    );
-}
-
-fn xfer_from(
+pub fn xfer(
     e: &mut Env,
-    contract_id: U256,
-    spender: KeyedAuthorization,
-    from: Identifier,
-    to: Identifier,
-    amount: BigInt,
+    contract_id: &U256,
+    from: &KeyedAuthorization,
+    to: &Identifier,
+    amount: &BigInt,
 ) {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "xfer_from", (&spender, &from, &to, &amount))
+        (contract_id, "xfer", (from, to, amount))
             .to_scvec()
             .unwrap(),
     );
 }
 
-fn burn(e: &mut Env, contract_id: U256, admin: Authorization, from: Identifier, amount: BigInt) {
+pub fn xfer_from(
+    e: &mut Env,
+    contract_id: &U256,
+    spender: &KeyedAuthorization,
+    from: &Identifier,
+    to: &Identifier,
+    amount: &BigInt,
+) {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "burn", (&admin, &from, &amount))
+        (contract_id, "xfer_from", (spender, from, to, amount))
             .to_scvec()
             .unwrap(),
     );
 }
 
-fn freeze(e: &mut Env, contract_id: U256, admin: Authorization, id: Identifier) {
+pub fn burn(
+    e: &mut Env,
+    contract_id: &U256,
+    admin: &Authorization,
+    from: &Identifier,
+    amount: &BigInt,
+) {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "freeze", (&admin, &id)).to_scvec().unwrap(),
-    );
-}
-
-fn mint(e: &mut Env, contract_id: U256, admin: Authorization, to: Identifier, amount: BigInt) {
-    e.invoke_function(
-        HostFunction::Call,
-        (&contract_id, "mint", (&admin, &to, &amount))
+        (contract_id, "burn", (admin, from, amount))
             .to_scvec()
             .unwrap(),
     );
 }
 
-fn set_admin(e: &mut Env, contract_id: U256, admin: Authorization, new_admin: Identifier) {
+pub fn freeze(e: &mut Env, contract_id: &U256, admin: &Authorization, id: &Identifier) {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "set_admin", (&admin, &new_admin))
+        (contract_id, "freeze", (admin, id)).to_scvec().unwrap(),
+    );
+}
+
+pub fn mint(
+    e: &mut Env,
+    contract_id: &U256,
+    admin: &Authorization,
+    to: &Identifier,
+    amount: &BigInt,
+) {
+    e.invoke_function(
+        HostFunction::Call,
+        (contract_id, "mint", (admin, to, amount))
             .to_scvec()
             .unwrap(),
     );
 }
 
-fn unfreeze(e: &mut Env, contract_id: U256, admin: Authorization, id: Identifier) {
+pub fn set_admin(e: &mut Env, contract_id: &U256, admin: &Authorization, new_admin: &Identifier) {
     e.invoke_function(
         HostFunction::Call,
-        (&contract_id, "unfreeze", (&admin, &id))
+        (contract_id, "set_admin", (admin, new_admin))
             .to_scvec()
             .unwrap(),
+    );
+}
+
+pub fn unfreeze(e: &mut Env, contract_id: &U256, admin: &Authorization, id: &Identifier) {
+    e.invoke_function(
+        HostFunction::Call,
+        (contract_id, "unfreeze", (admin, id)).to_scvec().unwrap(),
     );
 }
