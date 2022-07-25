@@ -28,6 +28,8 @@ fn check_ed25519_auth(
         domain: domain as u32,
         parameters: parameters.try_into().unwrap(),
     };
+    let scv: stellar_contract_sdk::xdr::ScVal = Message::V0(msg.clone()).try_into().unwrap();
+    println!("{:#?}", scv);
     let msg_bin = e.serialize_to_binary(Message::V0(msg));
 
     e.verify_sig_ed25519(auth.signature.into(), auth.public_key.into(), msg_bin);

@@ -5,7 +5,7 @@ use stellar_contract_sdk::xdr::HostFunction;
 use stellar_contract_sdk::{BigInt, Env, EnvVal, IntoEnvVal, TryIntoVal, Vec};
 use stellar_token_contract::external;
 use stellar_token_contract::public_types::{
-    Identifier, KeyedAuthorization, KeyedEd25519Authorization, Message, MessageV0,
+    Identifier, Authorization, Message, MessageV0,
 };
 
 fn generate_contract_id() -> [u8; 32] {
@@ -53,18 +53,16 @@ impl Token {
     }
 
     pub fn mint(&mut self, admin: &Keypair, to: &Identifier, amount: &BigInt) {
-        let args: Vec<EnvVal> = Vec::new(&self.0);
-        args.push(to.into_env_val(&self.0));
-        args.push(amount.into_env_val(&self.0));
+        let mut args: Vec<EnvVal> = Vec::new(&self.0);
+        args.push(to.clone().into_env_val(&self.0));
+        args.push(amount.clone().into_env_val(&self.0));
         let msg = Message::V0(MessageV0 {
             nonce: self.nonce(&to_ed25519(&self.0, admin)),
             domain: 5u32, // TODO: Use enum
             parameters: args,
         });
-        let auth = KeyedAuthorization::Ed25519(KeyedEd25519Authorization {
-            public_key: admin.public.to_bytes().try_into_val(&self.0).unwrap(),
-            signature: admin.sign(msg).unwrap().try_into_val(&self.0).unwrap(),
-        });
+        println!("{:#?}", admin.sign(msg.clone()).unwrap());
+        let auth = Authorization::Ed25519(admin.sign(msg).unwrap().try_into_val(&self.0).unwrap());
         self.0.invoke_contract(
             HostFunction::Call,
             (self.1, "mint", auth, to, amount).try_into().unwrap(),
@@ -86,9 +84,9 @@ fn test() {
 
     token.initialize(&admin1_id);
 
-    //token.mint(&admin1, &user1_id, 1000u64.into());
-    //assert_eq!(token.balance(&user1_id), 1000u64.into());
-    //assert_eq!(token.nonce(&admin1_id), 1u64.into());
+    token.mint(&admin1, &user1_id, &BigInt::from_u32(&e, 1000));
+    assert!(token.balance(&user1_id) == BigInt::from_u32(&e, 1000));
+    assert!(token.nonce(&user1_id) == BigInt::from_u32(&e, 1));
 }
 
 /*use ed25519_dalek::Keypair;
